@@ -22,6 +22,8 @@ class Server:
                 if fname in self.files:
                     lname, owner = self.files[fname]
                     owner.send(f'send {lname} to {client.getpeername()}'.encode('ascii'))
+            elif msg.startswith('FILES:'):
+                print(f'Files in client: {msg[6:]}')
 
     def command_shell(self):
         while True:
@@ -46,8 +48,13 @@ class Server:
     def run(self):
         while True:
             client, addr = self.server.accept()
-            print(f'New connection from {addr}')
-            self.clients[addr] = client
+            try:
+                hostname, _, _ = socket.gethostbyaddr(addr[0])
+            except socket.herror:
+                hostname = addr[0] # use the IP address if the hostname is not available
+            print(f'New connection from {hostname}:{addr[1]}')
+
+            self.clients[hostname] = client
             thread = threading.Thread(target=self.handle, args=(client,))
             thread.start()
 

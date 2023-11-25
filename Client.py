@@ -22,8 +22,10 @@ class Client:
                 elif message.startswith('request'):
                     _, lname = message.split()
                     self.send_file(lname)
-            except:
-                print("An error occured!")
+                elif message == 'list':
+                    self.send('FILES: ' + ' '.join(self.files.keys()))
+            except Exception as e:
+                print("An error occured: ", str(e))
                 self.client.close()
                 break
 
@@ -32,16 +34,22 @@ class Client:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(addr)
             s.send(f'request {lname}'.encode('ascii'))
-            data = s.recv(1024)
-            # write data to a file
-            with open(lname, 'wb') as f:
-                f.write(data)
+            with open(os.path.join(os.path.dirname(os.path.realpath(__file__)), lname), 'wb') as f:
+                while True:
+                    data = s.recv(1024)
+                    if not data:
+                        break
+                    f.write(data)
+            print(f'File {lname} has been downloaded.')
 
     def send_file(self, lname):
         if lname in self.files:
             with open(self.files[lname], 'rb') as f:
-                data = f.read()
-                self.client.send(data)
+                while True:
+                    data = f.read(1024)
+                    if not data:
+                        break
+                    self.client.send(data)
 
     def command_shell(self):
         while True:
@@ -52,6 +60,7 @@ class Client:
                     if os.path.isfile(lname):
                         self.files[fname] = lname
                         self.send(cmd)
+                        print(f'File {lname} published successfully as {fname}.')
                     else:
                         print(f'File {lname} does not exist.')
                 except ValueError:
