@@ -1,5 +1,6 @@
 import socket
 import threading
+import sys
 
 class Server:
     def __init__(self, host = socket.gethostname(), port = 22236):
@@ -16,18 +17,26 @@ class Server:
             msg = client.recv(1024).decode('ascii')
             if msg.startswith('publish'):
                 _, lname, fname = msg.split()
-                self.files[fname] = (lname, client)
+                if fname not in self.files:
+                    self.files[fname] = []
+                self.files[fname].append((lname, client))
             elif msg.startswith('fetch'):
                 _, fname = msg.split()
                 if fname in self.files:
-                    lname, owner = self.files[fname]
-                    owner.send(f'send {lname} to {client.getpeername()}'.encode('ascii'))
+                    for lname, owner in self.files[fname]:
+                        ip, port = owner.getpeername()
+                        client.send(f'owner {ip} {port} has {lname}'.encode('ascii'))
             elif msg.startswith('FILES:'):
-                print(f'Files in client: {msg[6:]}')
+                print(f'Files in client {client.getpeername()}: {msg[6:]}')
 
     def command_shell(self):
         while True:
             cmd = input('Enter command: ')
+            if cmd == 'exit' or cmd == 'stop':
+                for client in self.clients.values():
+                    client.close()
+                self.server.close()
+                break
             if cmd.startswith('discover'):
                 _, hostname = cmd.split()
                 if hostname in self.clients:
@@ -42,6 +51,8 @@ class Server:
                     client.send('ping'.encode('ascii'))
                 else:
                     print(f'Host {hostname} not found.')
+            elif cmd.startswith('exit'):
+                sys.exit()
             else:
                 print('Invalid command.')
 
@@ -64,4 +75,3 @@ class Server:
 if __name__ == "__main__":
     server = Server()
     server.run()
-    
