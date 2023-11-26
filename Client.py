@@ -89,6 +89,7 @@ class Client:
             elif cmd.startswith('address'):
                 try:
                     _, addr = cmd.split()
+                    #HERE
                     for fname, addrs in self.available_files.items():
                         if addr in addrs:
                             self.fetch_file(fname, addr)

@@ -1,8 +1,9 @@
 command line ---> done
 publish ---> done
 discover ---> done
-displaying available node -> done
+displaying available nodes -> done
 multithread ---> done
+exit/stop ---> somewhat working
 fetch ---> not yet
 send ---> not yet
 multiple download ---> not yet
