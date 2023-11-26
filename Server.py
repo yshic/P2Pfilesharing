@@ -36,6 +36,7 @@ class Server:
                 for client in self.clients.values():
                     client.close()
                 self.server.close()
+                sys.exit()
                 break
             if cmd.startswith('discover'):
                 _, hostname = cmd.split()

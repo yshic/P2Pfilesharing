@@ -61,6 +61,7 @@ class Client:
             cmd = input('Enter command: ')
             if cmd == 'exit' or cmd == 'stop':
                 self.client.close()
+                sys.exit()
                 break
             if cmd.startswith('publish'):
                 try:
