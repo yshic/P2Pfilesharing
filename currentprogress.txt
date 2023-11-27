@@ -4,6 +4,7 @@ discover ---> done
 displaying available nodes -> done
 multithread ---> done
 exit/stop ---> somewhat working
+work on different machine ---> can connect, not tested other function yet
 fetch ---> not yet
 send ---> not yet
 multiple download ---> not yet
