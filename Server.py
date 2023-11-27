@@ -58,6 +58,8 @@ class Server:
                 print('Invalid command.')
 
     def run(self):
+        print(f'Server is running on IP: {socket.gethostbyname(self.host)}')
+
         while True:
             client, addr = self.server.accept()
             try:

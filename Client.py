@@ -8,9 +8,13 @@ import sys
 src_file_path = inspect.getfile(lambda: None)
 
 class Client:
-    def __init__(self, host = socket.gethostname(), port = 22236):
+    def __init__(self, host = input("Enter the server's IP address: "), port = 22236):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client.connect((host, port))
+        try:
+            self.client.connect((host, port))
+        except socket.error as e:
+            print(f"Couldn't connect to the server, recheck the IP address: {e}")
+            return
         self.files = {}
 
     def send(self, msg):
