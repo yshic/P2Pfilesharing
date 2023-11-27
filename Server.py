@@ -1,6 +1,5 @@
 import socket
 import threading
-import sys
 
 class Server:
     def __init__(self, host = socket.gethostname(), port = 22236):
@@ -36,7 +35,6 @@ class Server:
                 for client in self.clients.values():
                     client.close()
                 self.server.close()
-                sys.exit()
                 break
             if cmd.startswith('discover'):
                 _, hostname = cmd.split()
@@ -52,8 +50,6 @@ class Server:
                     client.send('ping'.encode('ascii'))
                 else:
                     print(f'Host {hostname} not found.')
-            elif cmd.startswith('exit'):
-                sys.exit()
             else:
                 print('Invalid command.')
 
