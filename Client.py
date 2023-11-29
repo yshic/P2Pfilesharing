@@ -8,9 +8,8 @@ src_file_path = inspect.getfile(lambda: None)
 
 class Client:
     def __init__(self, host = input("Enter the server's IP address: "), port = 22236):
-        self.host = '127.0.0.1'
+        self.host = socket.gethostbyname(socket.gethostname())
         self.port = port + 1
-        print(f"host {self.host} ,port {self.port}")
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.client.connect((host, port))
@@ -21,19 +20,28 @@ class Client:
 
         # Start the server to accept incoming connections
         self.start_server()
+        
+        # Publish all files in the repo folder
+        self.publish_all_files()
 
     def start_server(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server_socket.bind((self.host, self.port))
         self.server_socket.listen()
         thread = threading.Thread(target=self.accept_connections)
         thread.start()
+        self.send(f'CLIENT_IP {self.host} {self.port}')
     
     def accept_connections(self):
-        client, addr = self.server_socket.accept()
-        thread = threading.Thread(target=self.handle_client, args=(client,))
-        thread.start()
-    
+        while True:
+            try:    
+                client, addr = self.server_socket.accept()
+                thread = threading.Thread(target=self.handle_client, args=(client,))
+                thread.start()
+            except OSError:
+                break
+
     def handle_client(self, client):
         while True:
             msg = client.recv(1024).decode('ascii')
@@ -42,14 +50,14 @@ class Client:
                 self.send_file(lname, client)
 
     def send(self, msg):
-        self.client.send(msg.encode('ascii'))
+        self.client.send((msg + '\n').encode('ascii'))
 
     def receive(self):
         while True:
             try:
                 message = self.client.recv(1024).decode('ascii')
                 if message.startswith('owner'):
-                    _, ip, port, _, lname = message.split()
+                    _, ip, port, _, lname = message.split(' ', 4)
                     addr = (ip, int(port))
                     print(f'File {lname} is available at {addr}.')
                 elif message.startswith('request'):
@@ -57,23 +65,44 @@ class Client:
                     self.send_file(lname)
                 elif message == 'list':
                     self.send('FILES: ' + ' '.join(self.files.keys()))
+                elif message == 'File not available':
+                    print(message)
+            except ConnectionResetError:
+                print("Connection was closed by the server.")
+                break
             except Exception as e:
                 print("An error occured: ", str(e))
                 self.client.close()
                 break
 
+    def publish_all_files(self):
+        repo_path = os.path.join(os.path.dirname(src_file_path), 'repo')
+        files_published = False
+        for fname in os.listdir(repo_path):
+            lname = os.path.join(repo_path, fname)
+            if os.path.isfile(lname):
+                self.files[fname] = lname
+                self.send(f'publish {lname} {fname}')
+                files_published = True
+                print(f'File {lname} published successfully as {fname}.')
+        if files_published:
+            print("All files in the repository published successfully.")
+            
     def fetch_file(self, lname, addr):
         # create a new socket connection to the client with the file
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.connect(addr)
+            print('Connected, fetching file...')
             s.send(f'request {lname}'.encode('ascii'))
             with open(os.path.join('repo', lname), 'wb') as f:
-                while True:
-                    data = s.recv(1024)
-                    if not data:
-                        break
-                    f.write(data)
+                try:
+                    while True:
+                        data = s.recv(1024)
+                        if not data:
+                            break
+                        f.write(data)
+                except Exception as e:
+                    print(f"An error occurred while receiving data: {e}")    
             print(f'File {lname} has been downloaded.')
 
     def send_file(self, lname, client):
@@ -84,6 +113,8 @@ class Client:
                     if not data:
                         break
                     client.send(data)
+            print('Sent ' + lname + ' to: ' + str(client.getpeername()))
+            client.close()
 
     def command_shell(self):
         while True:
@@ -127,6 +158,18 @@ class Client:
                         print('Invalid command. The correct format is: fetch [filename] or fetch [filename] [ip] [port]')
                 except ValueError:
                     print('Invalid command. The correct format is: fetch [filename] or fetch [filename] [ip] [port]')
+            elif cmd.startswith('remove'):
+                try:
+                    _, fname = cmd.split()
+                    if fname in self.files:
+                        os.remove(self.files[fname])
+                        del self.files[fname]
+                        self.send(cmd)
+                        print(f'File {fname} removed successfully from the local repository.')
+                    else:
+                        print(f'File {fname} does not exist in the local repository.')
+                except ValueError:
+                    print('Invalid command. The correct format is: remove [filename]')
             else:
                 print('Invalid command.')
 
