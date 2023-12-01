@@ -25,9 +25,6 @@ class Client:
 
         # Start the server to accept incoming connections
         self.start_server()
-        
-        # Publish all files in the repo folder
-        self.publish_all_files()
 
     def start_server(self):
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -50,7 +47,7 @@ class Client:
     def handle_client(self, client):
         while True:
             try:
-                msg = client.recv(1024).decode('ascii')
+                msg = client.recv(1024).decode('utf-8')
                 if msg.startswith('request'):
                     _, lname = msg.split()
                     self.send_file(lname, client)
@@ -58,25 +55,20 @@ class Client:
                 break
 
     def send(self, msg):
-        self.client.send((msg + '\n').encode('ascii'))
+        self.client.send((msg + '\n').encode('utf-8'))
 
     def receive(self):
         while True:
             try:
-                message = self.client.recv(1024).decode('ascii')
+                message = self.client.recv(1024).decode('utf-8')
                 if message.startswith('owner'):
                     _, ip, port, _, fname = message.split(' ', 4)
                     addr = (ip, int(port))
                     print(f'File {fname} is available at {addr}.')
                 elif message.startswith('published'):
-                    temp, fname = message.rsplit(' ', 1)
-                    _, lname = temp.split(' ', 1)
-                    print(f'\nFile {lname} published successfully as {fname}.')
+                    print(f'Server Response: Files published to the server')
                 elif message.startswith('removed'):
-                    print(f'\nFiles list on the server updated')
-                elif message.startswith('request'):
-                    _, fname = message.split()
-                    self.send_file(fname)
+                    print(f'Server Response: Files removed')
                 elif message == 'list':
                     self.send('FILES: ' + ' '.join(self.files.keys()))
                 elif message == 'File not available':
@@ -93,7 +85,6 @@ class Client:
     
     def publish_all_files(self):
         repo_path = os.path.join(os.path.dirname(src_file_path), 'repo')
-        files_published = False
 
         # Create the 'repo' folder if it doesn't exist
         if not os.path.exists(repo_path):
@@ -106,16 +97,14 @@ class Client:
             if os.path.isfile(lname):
                 self.files[fname] = lname
                 self.send(f'publish {lname} {fname}')
-                files_published = True
-        if files_published:
-            print("All files in the repository published successfully.")            
+       
 
     def fetch_file(self, fname, addr):
         # create a new socket connection to the client's server with the file
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect(addr)
             print('Connected, fetching file...')
-            s.send(f'request {fname}'.encode('ascii'))
+            s.send(f'request {fname}'.encode('utf-8'))
             start_time = time.time() # record start time
             with open(os.path.join('repo', fname), 'wb') as f:
                 try:
@@ -145,6 +134,8 @@ class Client:
         client.close()
 
     def command_shell(self):
+        # Publish all files in the repo folder
+        self.publish_all_files()
         print('Client is connected to the server. Type "/help" for a list of available commands.')
         while True:
             cmd = input('\nEnter command: ')
@@ -162,7 +153,7 @@ class Client:
                         shutil.copy(lname, repo_path)
                         # Add the file to self.files
                         self.files[fname] = repo_path
-                        #print(f'File {lname} published successfully as {fname}.')
+                        print(f'File {lname} published successfully as {fname}.')
                         self.send(cmd)
                     else:
                         print(f'File {lname} does not exist.')

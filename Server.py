@@ -19,7 +19,7 @@ class Server:
     def handle(self, client):
         while True:
             try:
-                data = client.recv(1024).decode('ascii')
+                data = client.recv(1024).decode('utf-8')
                 messages = data.split('\n')
                 for msg in messages:
                     if msg.startswith('publish'):
@@ -28,15 +28,15 @@ class Server:
                         if fname not in self.files:
                             self.files[fname] = []
                         self.files[fname].append((lname, client))
-                        client.send(f'published {lname} {fname}'.encode('ascii'))
+                        client.send(f'published'.encode('utf-8'))
                     elif msg.startswith('fetch'):
                         _, fname = msg.split()
                         if fname in self.files:
                             for lname, owner in self.files[fname]:
                                 ip, port = self.clients[owner]
-                                client.send(f'owner {ip} {port} has {fname}'.encode('ascii'))
+                                client.send(f'owner {ip} {port} has {fname}'.encode('utf-8'))
                         else:
-                            client.send('File not available'.encode('ascii'))
+                            client.send('File not available'.encode('utf-8'))
                     elif msg.startswith('CLIENT_IP'):
                         _, ip, port = msg.split()
                         self.clients[client] = (ip, int(port))
@@ -49,7 +49,7 @@ class Server:
                             self.files[fname] = [file for file in self.files[fname] if file[1] != client]
                             if not self.files[fname]:
                                 del self.files[fname]
-                        client.send('removed'.encode('ascii'))
+                        client.send('removed'.encode('utf-8'))
                     elif msg == 'ping':
                         receive_time = time.time()
                         round_trip_time = receive_time - self.ping_times[client]
@@ -76,7 +76,7 @@ class Server:
                     if hostname in self.clients:
                         if hostname in self.available_clients:
                             client = self.available_clients[hostname]
-                            client.send('list'.encode('ascii'))
+                            client.send('list'.encode('utf-8'))
                         else:
                             print(f'Client {hostname} has already disconnected.')
                     else:
@@ -93,7 +93,7 @@ class Server:
                             client.settimeout(5.0)      
                             self.ping_times[client] = time.time()
                             try:
-                                client.send('ping'.encode('ascii'))
+                                client.send('ping'.encode('utf-8'))
                                 client.settimeout(None) #Reset the timeout
                             except:
                                 print('Pinging fail.')
