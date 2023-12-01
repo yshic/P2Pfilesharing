@@ -64,7 +64,7 @@ class Client:
                 if message.startswith('owner'):
                     _, ip, port, _, fname = message.split(' ', 4)
                     addr = (ip, int(port))
-                    print(f'File {fname} is available at {addr}.')
+                    print(f'Server Response: File {fname} is available at {addr}.')
                 elif message.startswith('published'):
                     print(f'Server Response: Files published to the server')
                 elif message.startswith('removed'):
@@ -72,7 +72,7 @@ class Client:
                 elif message == 'list':
                     self.send('FILES: ' + ' '.join(self.files.keys()))
                 elif message == 'File not available':
-                    print(message)
+                    print('Server Response: ' + message)
                 elif message == 'ping':
                     self.send('ping')
             except ConnectionResetError:

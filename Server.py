@@ -58,7 +58,7 @@ class Server:
                 print(f"Ping failed for {client.getpeername()}")
             except ConnectionResetError:
                 print(f"Connection with client {client.getpeername()} was closed.")
-                del self.available_clients[client]
+                del self.available_clients[client.gethostname()]
                 break
 
     def command_shell(self):
@@ -75,8 +75,12 @@ class Server:
                     _, hostname = cmd.split()
                     if hostname in self.clients:
                         if hostname in self.available_clients:
-                            client = self.available_clients[hostname]
-                            client.send('list'.encode('utf-8'))
+                            try:
+                                client = self.available_clients[hostname]
+                                client.send('list'.encode('utf-8'))
+                            except ConnectionResetError:
+                                print(f"Connection with client {hostname} was already closed.")
+                                del self.available_clients[hostname]
                         else:
                             print(f'Client {hostname} has already disconnected.')
                     else:
@@ -95,8 +99,9 @@ class Server:
                             try:
                                 client.send('ping'.encode('utf-8'))
                                 client.settimeout(None) #Reset the timeout
-                            except:
+                            except ConnectionResetError:
                                 print('Pinging fail.')
+                                del self.available_clients[hostname]
                         else:
                             print(f'Client {hostname} has already disconnected.')
                     else:
