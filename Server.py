@@ -58,7 +58,6 @@ class Server:
                 print(f"Ping failed for {client.getpeername()}")
             except ConnectionResetError:
                 print(f"Connection with client {client.getpeername()} was closed.")
-                del self.available_clients[client.gethostname()]
                 break
 
     def command_shell(self):
