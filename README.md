@@ -23,7 +23,7 @@ Available commands for the server:
 - discover <hostname> - Discover files on the specified host'
 - ping <hostname> - Ping the specified host'
 - exit, stop - Stop the server'
-- 
+
 Available commands for the client:
 
 - publish <localname> <filename> - Publish a file to the server'
